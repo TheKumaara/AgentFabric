@@ -109,6 +109,16 @@ The platform demonstrates how enterprises can securely deploy, orchestrate, and 
 
 ### 💬 Conversation Management
 
+* **Smart Search & Filtering:** Find conversations by title, content, or agent
+* **Toast Notifications:** Real-time feedback for actions and errors
+* **Optimized Chat Interface:**
+    * Message history virtualization
+    * Streaming response support
+    * Rich message formatting
+    * Connection status indicators
+* **Responsive Design:** Mobile-first layout with smooth animations
+
+
 * Real-time conversation history from Archestra Platform API
 * Clickable conversation cards on homepage
 * Automatic message loading when resuming chats

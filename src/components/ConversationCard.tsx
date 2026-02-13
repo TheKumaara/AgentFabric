@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare, Clock } from 'lucide-react';
@@ -10,7 +11,18 @@ interface ConversationCardProps {
 }
 
 export function ConversationCard({ conversation, agentIcon: Icon, agentColor }: ConversationCardProps) {
+    // Default to the Orchestra Agent UUID if missing
     const agentId = conversation.agent?.id || 'd904f99e-af2a-4e6a-9474-44f78403ccc4';
+
+    // Safely format date
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return 'Unknown time';
+        try {
+            return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+        } catch (e) {
+            return 'Unknown time';
+        }
+    };
 
     return (
         <Link
@@ -33,13 +45,13 @@ export function ConversationCard({ conversation, agentIcon: Icon, agentColor }: 
                             <span>•</span>
                             <div className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                <span>{formatDistanceToNow(new Date(conversation.createdAt), { addSuffix: true })}</span>
+                                <span>{formatDate(conversation.createdAt)}</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                    {conversation.messageCount && (
+                    {conversation.messageCount !== undefined && (
                         <span className="px-2 py-1 rounded-full bg-white/5 text-white/60 border border-white/10 text-xs flex items-center gap-1">
                             <MessageSquare className="w-3 h-3" />
                             {conversation.messageCount}

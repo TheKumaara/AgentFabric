@@ -4,9 +4,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ClientFactory } from '@a2a-js/sdk/client';
-import { AgentCard, Message } from '@a2a-js/sdk';
-import { Send, ArrowLeft, Shield, AlertTriangle, CheckCircle, Terminal } from 'lucide-react';
+import { AgentCard } from '@a2a-js/sdk';
+import { Send, ArrowLeft, Shield, AlertTriangle, Terminal, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 import { fetchAgentCard, createProxiedClient } from '@/lib/archestraClient';
+import { Message } from '@/types';
+import { config } from '@/config';
 
 export default function AgentChatPage() {
     const params = useParams();
@@ -15,7 +18,7 @@ export default function AgentChatPage() {
     const agentId = params?.agent as string;
     const conversationId = searchParams?.get('conversationId');
 
-    const [messages, setMessages] = useState<any[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [agentCard, setAgentCard] = useState<AgentCard | null>(null);
@@ -23,16 +26,20 @@ export default function AgentChatPage() {
     const [error, setError] = useState<string | null>(null);
     const [processingStatus, setProcessingStatus] = useState<string | null>(null);
     const [activeAgent, setActiveAgent] = useState<string | null>(null);
+    const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
 
     const clientRef = useRef<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
 
+    // Initial load effect
     useEffect(() => {
         if (!agentId) return;
 
         const initAgent = async () => {
             try {
                 setIsConnecting(true);
+                setError(null);
 
                 // Fetch Agent Card via secure backend proxy
                 const card = await fetchAgentCard(agentId);
@@ -43,7 +50,7 @@ export default function AgentChatPage() {
                 clientRef.current = client;
 
                 // If conversationId is provided, fetch previous messages
-                if (conversationId) {
+                if (conversationId && !hasLoadedHistory) {
                     try {
                         const response = await fetch(`/api/archestra/conversations/${conversationId}`);
                         if (response.ok) {
@@ -52,8 +59,7 @@ export default function AgentChatPage() {
 
                             if (conversation.messages && Array.isArray(conversation.messages)) {
                                 // Convert Archestra message format to our format
-                                // Archestra messages might have different structures, so we handle multiple formats
-                                const formattedMessages = conversation.messages.map((msg: any) => {
+                                const formattedMessages: Message[] = conversation.messages.map((msg: any) => {
                                     // Extract text content from various possible formats
                                     let content = '';
 
@@ -72,26 +78,20 @@ export default function AgentChatPage() {
                                         content = typeof msg.message === 'string' ? msg.message : JSON.stringify(msg.message);
                                     }
 
-                                    console.log('[Chat] Formatted message:', { original: msg, formatted: { role: msg.role, content } });
-
                                     return {
-                                        role: msg.role === 'user' ? 'user' : 'agent',
+                                        role: (msg.role === 'user' ? 'user' : 'agent') as 'user' | 'agent',
                                         content: content || '[Empty message]',
                                         id: msg.id || crypto.randomUUID()
                                     };
                                 });
 
-                                console.log('[Chat] Setting messages:', formattedMessages);
-
                                 // For very long conversations, only show the last 50 messages initially
-                                // This improves performance and reduces initial load time
-                                const MESSAGE_LIMIT = 50;
-                                if (formattedMessages.length > MESSAGE_LIMIT) {
-                                    const recentMessages = formattedMessages.slice(-MESSAGE_LIMIT);
+                                if (formattedMessages.length > config.api.messageLimit) {
+                                    const recentMessages = formattedMessages.slice(-config.api.messageLimit);
                                     setMessages([
                                         {
                                             role: 'system',
-                                            content: `📜 This conversation has ${formattedMessages.length} messages. Showing the most recent ${MESSAGE_LIMIT}. Scroll up to load earlier messages.`,
+                                            content: `📜 This conversation has ${formattedMessages.length} messages. Showing the most recent ${config.api.messageLimit}.`,
                                             id: 'load-more-indicator',
                                             isLoadMoreIndicator: true,
                                             totalMessages: formattedMessages.length
@@ -101,32 +101,47 @@ export default function AgentChatPage() {
                                 } else {
                                     setMessages(formattedMessages);
                                 }
+                                setHasLoadedHistory(true);
+                                if (config.ui.enableToasts) {
+                                    toast.success('Conversation history loaded');
+                                }
                             }
+                        } else {
+                            throw new Error('Failed to fetch conversation');
                         }
                     } catch (err) {
                         console.error('Failed to load conversation history:', err);
-                        // Fall back to initial greeting if conversation load fails
+                        if (config.ui.enableToasts) {
+                            toast.error('Failed to load conversation history');
+                        }
+                        // Fall back to initial greeting
                         setMessages([
                             { role: 'agent', content: `Connected to ${card.name}. How can I help?`, id: 'init' }
                         ]);
                     }
-                } else {
+                } else if (!hasLoadedHistory) {
                     // Add initial greeting for new conversations
                     setMessages([
                         { role: 'agent', content: `Connected to ${card.name}. How can I help?`, id: 'init' }
                     ]);
+                    setHasLoadedHistory(true);
                 }
 
             } catch (err: any) {
                 console.error(err);
                 setError(err.message);
+                if (config.ui.enableToasts) {
+                    toast.error(`Connection failed: ${err.message}`);
+                }
             } finally {
                 setIsConnecting(false);
             }
         };
 
-        initAgent();
-    }, [agentId, conversationId]);
+        if (!clientRef.current || (conversationId && !hasLoadedHistory)) {
+            initAgent();
+        }
+    }, [agentId, conversationId, hasLoadedHistory]);
 
 
     const sendMessage = async () => {
@@ -167,8 +182,6 @@ export default function AgentChatPage() {
                 // Handle streaming response
                 let fullText = '';
                 for await (const chunk of stream) {
-                    console.log('Stream chunk:', chunk);
-
                     if (chunk.parts) {
                         const textPart = chunk.parts.find((p: any) => p.kind === 'text');
                         if (textPart?.text) {
@@ -196,7 +209,6 @@ export default function AgentChatPage() {
                     }
                 });
 
-                console.log('Agent response:', result);
                 setProcessingStatus(null);
 
                 // Handle response - check for different response structures
@@ -218,14 +230,18 @@ export default function AgentChatPage() {
                     }
                 } else {
                     console.warn('Unknown response type:', result);
-                    setMessages(prev => [...prev, { role: 'sys', content: `Received response: ${JSON.stringify(result)}`, id: Date.now().toString() }]);
+                    setMessages(prev => [...prev, { role: 'system', content: `Received response: ${JSON.stringify(result)}`, id: Date.now().toString() }]);
                 }
             }
 
         } catch (err: any) {
             console.error('Send message error:', err);
             setProcessingStatus(null);
-            setMessages(prev => [...prev, { role: 'sys', content: `Error: ${err.message}`, id: Date.now().toString() }]);
+            const errorMessage = `Error: ${err.message || 'Failed to send message'}`;
+            setMessages(prev => [...prev, { role: 'system', content: errorMessage, id: Date.now().toString() }]);
+            if (config.ui.enableToasts) {
+                toast.error('Failed to send message');
+            }
         } finally {
             setLoading(false);
             setActiveAgent(null);
@@ -267,7 +283,10 @@ export default function AgentChatPage() {
             </header>
 
             {/* Messages Area */}
-            <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+            <main
+                ref={chatContainerRef}
+                className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6"
+            >
                 {isConnecting && (
                     <div className="flex flex-col items-center justify-center h-full text-white/30 space-y-4">
                         <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
@@ -280,27 +299,46 @@ export default function AgentChatPage() {
                         <AlertTriangle className="w-12 h-12 mb-2" />
                         <p>Connection Failed</p>
                         <code className="bg-red-500/10 px-4 py-2 rounded text-sm">{error}</code>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors text-sm"
+                        >
+                            <RefreshCw className="w-4 h-4" /> Retry Connection
+                        </button>
                     </div>
                 )}
 
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] rounded-2xl p-4 border ${msg.role === 'user'
-                            ? 'bg-purple-600/20 border-purple-500/30 text-purple-100 rounded-tr-sm'
-                            : msg.role === 'sys'
-                                ? 'bg-red-500/10 border-red-500/20 text-red-200'
-                                : 'bg-white/5 border-white/10 text-gray-200 rounded-tl-sm'
-                            }`}>
-                            {msg.role === 'agent' && (
-                                <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider opacity-50">
-                                    <Terminal className="w-3 h-3" />
-                                    {agentCard?.name}
-                                </div>
-                            )}
-                            <div className="whitespace-pre-wrap leading-relaxed">
-                                {msg.content}
+                        {msg.isLoadMoreIndicator ? (
+                            <div className="w-full text-center py-4">
+                                <span className="px-4 py-2 bg-white/5 rounded-full text-xs text-white/40 border border-white/10">
+                                    {msg.content}
+                                </span>
                             </div>
-                        </div>
+                        ) : (
+                            <div className={`max-w-[80%] rounded-2xl p-4 border ${msg.role === 'user'
+                                ? 'bg-purple-600/20 border-purple-500/30 text-purple-100 rounded-tr-sm'
+                                : msg.role === 'system'
+                                    ? 'bg-red-500/10 border-red-500/20 text-red-200'
+                                    : 'bg-white/5 border-white/10 text-gray-200 rounded-tl-sm'
+                                }`}>
+                                {msg.role === 'agent' && (
+                                    <div className="flex justify-between items-center mb-2">
+                                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-50">
+                                            <Terminal className="w-3 h-3" />
+                                            {agentCard?.name || 'Agent'}
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="whitespace-pre-wrap leading-relaxed">
+                                    {msg.content}
+                                    {msg.streaming && (
+                                        <span className="inline-block w-1.5 h-4 ml-1 align-middle bg-purple-400/50 animate-pulse" />
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ))}
                 <div ref={messagesEndRef} />
