@@ -82,7 +82,25 @@ export default function AgentChatPage() {
                                 });
 
                                 console.log('[Chat] Setting messages:', formattedMessages);
-                                setMessages(formattedMessages);
+
+                                // For very long conversations, only show the last 50 messages initially
+                                // This improves performance and reduces initial load time
+                                const MESSAGE_LIMIT = 50;
+                                if (formattedMessages.length > MESSAGE_LIMIT) {
+                                    const recentMessages = formattedMessages.slice(-MESSAGE_LIMIT);
+                                    setMessages([
+                                        {
+                                            role: 'system',
+                                            content: `📜 This conversation has ${formattedMessages.length} messages. Showing the most recent ${MESSAGE_LIMIT}. Scroll up to load earlier messages.`,
+                                            id: 'load-more-indicator',
+                                            isLoadMoreIndicator: true,
+                                            totalMessages: formattedMessages.length
+                                        },
+                                        ...recentMessages
+                                    ]);
+                                } else {
+                                    setMessages(formattedMessages);
+                                }
                             }
                         }
                     } catch (err) {
