@@ -19,6 +19,16 @@ The platform demonstrates how enterprises can securely deploy, orchestrate, and 
 
 ---
 
+## 🏗️ System Architecture
+
+**AgentFabric operates as a secure Client Interface (Control Plane) for the Archestra Platform.**
+
+*   **Frontend (This Repo):** Next.js 16 application acting as the secure interface.
+*   **Backend Proxy:** Next.js API Routes (`/api/archestra/*`) handle secure communication with Archestra, keeping API keys server-side.
+*   **Intelligence Layer:** Agents (Orchestrator, HR, Finance) are hosted on the **Archestra Platform** and execute logic remotely.
+*   **Data Layer:** Agents connect to a **PostgreSQL MCP Server** to query live business data.
+
+
 ## 🏢 What AgentFabric Demonstrates
 
 ### 🤖 Enterprise AI Workforce
@@ -49,9 +59,9 @@ The platform demonstrates how enterprises can securely deploy, orchestrate, and 
 
 * ✅ Next.js 16 + React 19 production architecture
 * ✅ Real A2A protocol implementation using official SDK
-* ✅ Archestra platform integration (no simulation)
+* ✅ Archestra platform integration (Remote Agent Execution)
 * ✅ Streaming AI responses
-* ✅ MCP-powered live database queries
+* ✅ MCP-powered live database queries (via Remote Agents)
 * ✅ Real-time conversation history from Archestra Platform API
 * ✅ Dynamic agent status monitoring
 
