@@ -23,7 +23,7 @@ The platform demonstrates how enterprises can securely deploy, orchestrate, and 
 
 ### 🤖 Enterprise AI Workforce
 
-* Orchestrator Agent → Company-level reasoning & routing
+* Executive Manager → Company-level reasoning & routing
 * HR Agent → Employee and organizational intelligence
 * Finance Agent → Financial insights and analytics
 
@@ -52,6 +52,8 @@ The platform demonstrates how enterprises can securely deploy, orchestrate, and 
 * ✅ Archestra platform integration (no simulation)
 * ✅ Streaming AI responses
 * ✅ MCP-powered live database queries
+* ✅ Real-time conversation history from Archestra Platform API
+* ✅ Dynamic agent status monitoring
 
 ### Enterprise Architecture Patterns
 
@@ -69,7 +71,7 @@ The platform demonstrates how enterprises can securely deploy, orchestrate, and 
 ### 🧠 Agent Orchestration
 
 * Centralized agent lifecycle management
-* Multi-agent coordination via orchestrator
+* Multi-agent coordination via executive manager
 * Dynamic agent discovery via A2A Agent Cards
 * Versioned prompt deployments
 
@@ -100,6 +102,18 @@ The platform demonstrates how enterprises can securely deploy, orchestrate, and 
 * Performance metrics
 * Streaming response monitoring
 * Structured error handling
+* **Conversation history tracking**
+* **Live chat session management**
+
+---
+
+### 💬 Conversation Management
+
+* Real-time conversation history from Archestra Platform API
+* Clickable conversation cards on homepage
+* Automatic message loading when resuming chats
+* Support for multiple message formats (A2A protocol)
+* Live updates every 15 seconds
 
 ---
 
@@ -113,7 +127,7 @@ Secure Backend Proxy (Next.js API Layer)
 A2A Gateway (Archestra)
         ↓
 AgentFabric Execution Layer
-   • Orchestrator Agent
+   • Executive Manager
    • HR Agent
    • Finance Agent
         ↓

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ClientFactory } from '@a2a-js/sdk/client';
 import { AgentCard, Message } from '@a2a-js/sdk';
 import { Send, ArrowLeft, Shield, AlertTriangle, CheckCircle, Terminal } from 'lucide-react';
@@ -11,7 +11,9 @@ import { fetchAgentCard, createProxiedClient } from '@/lib/archestraClient';
 export default function AgentChatPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const agentId = params?.agent as string;
+    const conversationId = searchParams?.get('conversationId');
 
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
@@ -19,6 +21,8 @@ export default function AgentChatPage() {
     const [agentCard, setAgentCard] = useState<AgentCard | null>(null);
     const [isConnecting, setIsConnecting] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+    const [activeAgent, setActiveAgent] = useState<string | null>(null);
 
     const clientRef = useRef<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,10 +42,62 @@ export default function AgentChatPage() {
                 const client = await createProxiedClient(agentId, card);
                 clientRef.current = client;
 
-                // Add initial greeting
-                setMessages([
-                    { role: 'agent', content: `Connected to ${card.name}. How can I help?`, id: 'init' }
-                ]);
+                // If conversationId is provided, fetch previous messages
+                if (conversationId) {
+                    try {
+                        const response = await fetch(`/api/archestra/conversations/${conversationId}`);
+                        if (response.ok) {
+                            const conversation = await response.json();
+                            console.log('[Chat] Loaded conversation:', conversation);
+
+                            if (conversation.messages && Array.isArray(conversation.messages)) {
+                                // Convert Archestra message format to our format
+                                // Archestra messages might have different structures, so we handle multiple formats
+                                const formattedMessages = conversation.messages.map((msg: any) => {
+                                    // Extract text content from various possible formats
+                                    let content = '';
+
+                                    if (typeof msg.content === 'string') {
+                                        content = msg.content;
+                                    } else if (msg.text) {
+                                        content = msg.text;
+                                    } else if (msg.parts && Array.isArray(msg.parts)) {
+                                        // Handle parts-based format (A2A protocol)
+                                        const textParts = msg.parts
+                                            .filter((p: any) => p.kind === 'text' || p.type === 'text')
+                                            .map((p: any) => p.text || p.content)
+                                            .filter(Boolean);
+                                        content = textParts.join('\n');
+                                    } else if (msg.message) {
+                                        content = typeof msg.message === 'string' ? msg.message : JSON.stringify(msg.message);
+                                    }
+
+                                    console.log('[Chat] Formatted message:', { original: msg, formatted: { role: msg.role, content } });
+
+                                    return {
+                                        role: msg.role === 'user' ? 'user' : 'agent',
+                                        content: content || '[Empty message]',
+                                        id: msg.id || crypto.randomUUID()
+                                    };
+                                });
+
+                                console.log('[Chat] Setting messages:', formattedMessages);
+                                setMessages(formattedMessages);
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Failed to load conversation history:', err);
+                        // Fall back to initial greeting if conversation load fails
+                        setMessages([
+                            { role: 'agent', content: `Connected to ${card.name}. How can I help?`, id: 'init' }
+                        ]);
+                    }
+                } else {
+                    // Add initial greeting for new conversations
+                    setMessages([
+                        { role: 'agent', content: `Connected to ${card.name}. How can I help?`, id: 'init' }
+                    ]);
+                }
 
             } catch (err: any) {
                 console.error(err);
@@ -52,7 +108,8 @@ export default function AgentChatPage() {
         };
 
         initAgent();
-    }, [agentId]);
+    }, [agentId, conversationId]);
+
 
     const sendMessage = async () => {
         if (!input.trim() || !clientRef.current) return;
@@ -60,6 +117,8 @@ export default function AgentChatPage() {
         const userMsg = input;
         setInput('');
         setLoading(true);
+        setProcessingStatus('Sending message...');
+        setActiveAgent(agentCard?.name || agentId);
 
         // Add user message to UI
         const tempId = Date.now().toString();
@@ -70,9 +129,11 @@ export default function AgentChatPage() {
             const supportsStreaming = agentCard?.capabilities?.streaming;
 
             if (supportsStreaming) {
+                setProcessingStatus(`${agentCard?.name || 'Agent'} is processing...`);
+
                 // Streaming mode - create a placeholder message that we'll update
                 const streamingMessageId = `streaming-${Date.now()}`;
-                setMessages(prev => [...prev, { role: 'agent', content: '', id: streamingMessageId }]);
+                setMessages(prev => [...prev, { role: 'agent', content: '', id: streamingMessageId, streaming: true }]);
 
                 // Use the A2A SDK's streaming support
                 const stream = await clientRef.current.sendMessage({
@@ -97,13 +158,16 @@ export default function AgentChatPage() {
                             // Update the message in real-time
                             setMessages(prev => prev.map(msg =>
                                 msg.id === streamingMessageId
-                                    ? { ...msg, content: fullText }
+                                    ? { ...msg, content: fullText, streaming: false }
                                     : msg
                             ));
                         }
                     }
                 }
+                setProcessingStatus(null);
             } else {
+                setProcessingStatus(`${agentCard?.name || 'Agent'} is thinking...`);
+
                 // Non-streaming mode (current implementation)
                 const result = await clientRef.current.sendMessage({
                     message: {
@@ -115,6 +179,7 @@ export default function AgentChatPage() {
                 });
 
                 console.log('Agent response:', result);
+                setProcessingStatus(null);
 
                 // Handle response - check for different response structures
                 if (result.kind === 'message' || (result.messageId && result.parts)) {
@@ -141,9 +206,11 @@ export default function AgentChatPage() {
 
         } catch (err: any) {
             console.error('Send message error:', err);
+            setProcessingStatus(null);
             setMessages(prev => [...prev, { role: 'sys', content: `Error: ${err.message}`, id: Date.now().toString() }]);
         } finally {
             setLoading(false);
+            setActiveAgent(null);
         }
     };
 
@@ -220,6 +287,24 @@ export default function AgentChatPage() {
                 ))}
                 <div ref={messagesEndRef} />
             </main>
+
+            {/* Processing Status Indicator */}
+            {processingStatus && (
+                <div className="px-4 py-2 border-t border-white/10 bg-white/5 backdrop-blur-md">
+                    <div className="flex items-center gap-3 text-sm">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                            <span className="text-white/60">{processingStatus}</span>
+                        </div>
+                        {activeAgent && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs">
+                                <Terminal className="w-3 h-3" />
+                                {activeAgent}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Input Area */}
             <div className="p-4 border-t border-white/10 bg-black">

@@ -1,13 +1,16 @@
 
+'use client';
+
 import { MessageSquare, Users, BarChart3, Activity, Command } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const AGENTS = [
   {
     id: 'orchestrator',
-    name: 'Orchestrator Agent',
-    role: 'Central Intelligence',
-    description: 'Routes complex tasks to appropriate departments and synthesizes results.',
+    name: 'Executive Manager',
+    role: 'Executive Operations',
+    description: 'Oversees company operations, provides strategic insights, and routes queries to department managers.',
     icon: Command,
     color: 'bg-purple-500/10 text-purple-400 border-purple-500/20'
   },
@@ -39,6 +42,75 @@ const AGENTS = [
 ];
 
 export default function Home() {
+  const [agentStatus, setAgentStatus] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(true);
+  const [conversations, setConversations] = useState<any[]>([]);
+
+
+  useEffect(() => {
+    // Fetch agent status from Archestra
+    const fetchAgentStatus = async () => {
+      try {
+        const statuses: Record<string, any> = {};
+
+        for (const agent of AGENTS.filter(a => !a.disabled)) {
+          try {
+            // Use the backend proxy endpoint
+            const response = await fetch(`/api/archestra/${agent.id}`);
+            if (response.ok) {
+              const card = await response.json();
+              statuses[agent.id] = {
+                available: true,
+                name: card.name,
+                capabilities: card.capabilities,
+                lastChecked: new Date().toISOString()
+              };
+            } else {
+              statuses[agent.id] = { available: false };
+            }
+          } catch (err) {
+            statuses[agent.id] = { available: false };
+          }
+        }
+
+        setAgentStatus(statuses);
+      } catch (error) {
+        console.error('Failed to fetch agent status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgentStatus();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchAgentStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Fetch conversations from Archestra
+    const fetchConversations = async () => {
+      try {
+        const response = await fetch('/api/archestra/conversations');
+        if (response.ok) {
+          const data = await response.json();
+          if (!data.error && Array.isArray(data)) {
+            setConversations(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch conversations:', error);
+      }
+    };
+
+    fetchConversations();
+    // Refresh every 15 seconds
+    const interval = setInterval(fetchConversations, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+
+
   return (
     <div className="min-h-screen bg-black text-white selection:bg-purple-500/30">
       {/* Header */}
@@ -48,10 +120,13 @@ export default function Home() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center">
               <Command className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg tracking-tight">Company OS <span className="text-white/40 font-normal">v1.0</span></span>
+            <span className="font-bold text-lg tracking-tight">AgentFabric <span className="text-white/40 font-normal">v1.0</span></span>
           </div>
           <div className="flex items-center gap-4 text-sm text-white/60">
-            <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> System Operational</span>
+            <span className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${loading ? 'bg-yellow-500' : 'bg-green-500'} animate-pulse`} />
+              {loading ? 'Connecting...' : `${Object.values(agentStatus).filter((s: any) => s.available).length} Agents Online`}
+            </span>
           </div>
         </div>
       </header>
@@ -60,7 +135,7 @@ export default function Home() {
         <div className="mb-12">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-white to-white/40 bg-clip-text text-transparent">Agent Workspace</h1>
           <p className="text-white/60 text-lg max-w-2xl">
-            Authorize and interact with autonomous agents. The Orchestrator can handle complex multi-step workflows by coordinating with other agents.
+            Authorize and interact with autonomous agents. The Executive Manager can handle complex multi-step workflows by coordinating with department managers.
           </p>
         </div>
 
@@ -87,7 +162,18 @@ export default function Home() {
                   )}
                 </div>
 
-                <p className="text-white/40 text-sm font-medium mb-3 uppercase tracking-wider">{agent.role}</p>
+                <div className="text-white/40 text-sm font-medium mb-3 uppercase tracking-wider flex items-center gap-2">
+                  {agent.role}
+                  {!agent.disabled && agentStatus[agent.id] && (
+                    <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs normal-case ${agentStatus[agent.id].available
+                      ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                      : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                      }`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${agentStatus[agent.id].available ? 'bg-green-500' : 'bg-red-500'}`} />
+                      {agentStatus[agent.id].available ? 'Online' : 'Offline'}
+                    </span>
+                  )}
+                </div>
                 <p className="text-white/70 leading-relaxed mb-6">
                   {agent.description}
                 </p>
@@ -107,27 +193,98 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Recent Activity / Observability simulation */}
+        {/* Recent Conversations */}
         <div className="mt-16 pt-16 border-t border-white/10">
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
             <Activity className="w-5 h-5 text-white/40" />
-            Live Activity Stream
+            Recent Conversations
+            {conversations.length > 0 && (
+              <span className="text-xs text-white/40 font-normal ml-2">
+                Live • Updates every 15s
+              </span>
+            )}
           </h2>
-          <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
-            <div className="grid grid-cols-4 p-4 border-b border-white/10 text-xs font-medium text-white/40 uppercase tracking-wider">
-              <div>Timestamp</div>
-              <div>Agent</div>
-              <div>Action</div>
-              <div>Status</div>
+
+          {conversations.length > 0 ? (
+            <div className="space-y-4">
+              {conversations.slice(0, 8).map((conv: any) => {
+                // Find matching agent info by name for icon display
+                const agentInfo = AGENTS.find(a =>
+                  a.name.toLowerCase() === conv.agent?.name?.toLowerCase()
+                );
+
+                // Use the UUID from conversation data directly (Archestra returns UUIDs)
+                const agentId = conv.agent?.id || 'd904f99e-af2a-4e6a-9474-44f78403ccc4'; // Default to orchestrator UUID
+
+                return (
+                  <Link
+                    key={conv.id}
+                    href={`/chat/${agentId}?conversationId=${conv.id}`}
+                    className="block bg-white/5 rounded-xl border border-white/10 p-5 hover:bg-white/[0.07] hover:border-white/20 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        {agentInfo && (
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${agentInfo.color}`}>
+                            <agentInfo.icon className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-medium text-white">{conv.title || 'Untitled Conversation'}</h3>
+                          <p className="text-xs text-white/40 mt-0.5">
+                            {conv.agent?.name || 'Unknown Agent'} • {new Date(conv.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {conv.selectedModel && (
+                          <span className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs">
+                            {conv.selectedModel}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {conv.lastMessage && (
+                      <p className="text-sm text-white/60 line-clamp-2">
+                        {conv.lastMessage}
+                      </p>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
-            {[1, 2, 3].map((_, i) => (
-              <div key={i} className="grid grid-cols-4 p-4 border-b border-white/5 text-sm hover:bg-white/5 transition-colors">
-                <div className="text-white/40">10:{30 + i}:00 AM</div>
-                <div className="font-mono text-purple-300">orchestrator-agent</div>
-                <div>Routed task to Finance Agent</div>
-                <div className="text-green-400 flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-500" /> Completed</div>
+          ) : (
+            <div className="bg-white/5 rounded-xl border border-white/10 p-12 text-center">
+              <Activity className="w-12 h-12 text-white/20 mx-auto mb-4" />
+              <p className="text-white/60 font-medium mb-2">No Conversations Yet</p>
+              <p className="text-white/40 text-sm max-w-md mx-auto">
+                Start chatting with an agent to see conversation history here.
+              </p>
+            </div>
+          )}
+
+          {/* Quick Stats */}
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white/5 rounded-lg border border-white/10 p-4 text-center">
+              <div className="text-2xl font-bold text-purple-400">
+                {loading ? '...' : Object.values(agentStatus).filter((s: any) => s.available).length}
               </div>
-            ))}
+              <div className="text-sm text-white/60 mt-1">Agents Online</div>
+            </div>
+            <div className="bg-white/5 rounded-lg border border-white/10 p-4 text-center">
+              <div className="text-2xl font-bold text-blue-400">65+</div>
+              <div className="text-sm text-white/60 mt-1">Database Records</div>
+            </div>
+            <div className="bg-white/5 rounded-lg border border-white/10 p-4 text-center">
+              <div className="text-2xl font-bold text-green-400">
+                {loading ? '...' : Object.values(agentStatus).every((s: any) => s.available || s.available === undefined) ? '100%' : 'Partial'}
+              </div>
+              <div className="text-sm text-white/60 mt-1">System Health</div>
+            </div>
+            <div className="bg-white/5 rounded-lg border border-white/10 p-4 text-center">
+              <div className="text-2xl font-bold text-orange-400">A2A</div>
+              <div className="text-sm text-white/60 mt-1">Protocol Ready</div>
+            </div>
           </div>
         </div>
       </main>

@@ -23,13 +23,21 @@ export async function GET(
     try {
         const { agentId } = await params;
 
-        // Validate agent ID
-        const promptId = AGENT_PROMPT_IDS[agentId];
+        // Check if agentId is a friendly name or a UUID
+        let promptId = AGENT_PROMPT_IDS[agentId];
+
+        // If not found in mapping, check if it's already a UUID
         if (!promptId) {
-            return NextResponse.json(
-                { error: `Unknown agent: ${agentId}. Valid agents: ${Object.keys(AGENT_PROMPT_IDS).join(', ')}` },
-                { status: 404 }
-            );
+            // Check if agentId matches any of the UUIDs in the mapping
+            const matchingEntry = Object.entries(AGENT_PROMPT_IDS).find(([_, uuid]) => uuid === agentId);
+            if (matchingEntry) {
+                promptId = agentId; // It's already a UUID
+            } else {
+                return NextResponse.json(
+                    { error: `Unknown agent: ${agentId}. Valid agents: ${Object.keys(AGENT_PROMPT_IDS).join(', ')}` },
+                    { status: 404 }
+                );
+            }
         }
 
         // Get configuration from environment
