@@ -1,201 +1,219 @@
-# 🧵 AgentFabric — Enterprise AI Agent Orchestration Platform
+# 🧵 AgentFabric — Enterprise AI Workforce Control Plane
 
-> **Built for the [2 Fast 2 MCP Hackathon](https://www.wemakedevs.org/hackathons/2fast2mcp)** by WeMakeDevs & Archestra
->
-> **AgentFabric is the enterprise control plane for AI agents — combining A2A agent interoperability, Archestra governance, and MCP capability services into a production-ready platform.**
-
----
-
-## 🎯 Project Overview
-
-**AgentFabric** is an enterprise-grade multi-agent orchestration platform that simulates a real company AI workforce where departments operate as intelligent agents.
-
-The platform demonstrates how enterprises can securely deploy, orchestrate, and scale AI agents using:
-
-* **Archestra** → Governance, orchestration, and policy enforcement
-* **A2A Protocol** → Agent-to-agent interoperability
-* **MCP (Model Context Protocol)** → Secure tool and data access
-* **Next.js 16** → Real-world application integration layer
+> **Built for the [2 Fast 2 MCP Hackathon](https://www.wemakedevs.org/hackathons/2fast2mcp)**
+> Powered by [Archestra.ai](https://www.archestra.ai)
 
 ---
 
-## 🏗️ System Architecture
+# 🚀 What Is AgentFabric?
 
-**AgentFabric operates as a secure Client Interface (Control Plane) for the Archestra Platform.**
+**AgentFabric is a governed, observable, multi-agent AI workforce platform.**
 
-*   **Frontend (This Repo):** Next.js 16 application acting as the secure interface.
-*   **Backend Proxy:** Next.js API Routes (`/api/archestra/*`) handle secure communication with Archestra, keeping API keys server-side.
-*   **Intelligence Layer:** Agents (Orchestrator, HR, Finance) are hosted on the **Archestra Platform** and execute logic remotely.
-*   **Data Layer:** Agents connect to a **PostgreSQL MCP Server** to query live business data.
+It simulates a real enterprise where departments operate as intelligent AI agents — securely orchestrated through Archestra and connected to live data via MCP.
 
-
-## 🏢 What AgentFabric Demonstrates
-
-### 🤖 Enterprise AI Workforce
-
-* Executive Manager → Company-level reasoning & routing
-* HR Agent → Employee and organizational intelligence
-* Finance Agent → Financial insights and analytics
-
-### 🔐 Enterprise Governance
-
-* Centralized agent execution via Archestra
-* Secure A2A Gateway authentication
-* Policy-driven tool and data access
-* Server-side credential isolation
-
-### 🔌 Real-Time MCP Data Access
-
-* PostgreSQL MCP server integration
-* Live database queries (no static data)
-* Structured tool invocation
-* Multi-source data capability layer
+This is not a chatbot demo.
+This is enterprise AI infrastructure.
 
 ---
 
-## 🏆 Hackathon Highlights
+# 📑 Table of Contents
 
-### Technical Excellence
-
-* ✅ Next.js 16 + React 19 production architecture
-* ✅ Real A2A protocol implementation using official SDK
-* ✅ Archestra platform integration (Remote Agent Execution)
-* ✅ Streaming AI responses
-* ✅ MCP-powered live database queries (via Remote Agents)
-* ✅ Real-time conversation history from Archestra Platform API
-* ✅ Dynamic agent status monitoring
-
-### Enterprise Architecture Patterns
-
-* Control plane architecture
-* Secure backend proxy pattern
-* Agent capability separation
-* Protocol interoperability (A2A + MCP)
+- [🏗️ Visual Architecture](#️-visual-architecture-mermaid)
+- [🏢 AI Workforce Model](#-ai-workforce-model)
+- [🔐 Enterprise Governance Capabilities](#-enterprise-governance-capabilities-used)
+- [📊 Observability Dashboard](#-production-observability-dashboard)
+- [📸 Screenshots](#-screenshots-add-your-images-here)
+- [🛠 Tech Stack](#-tech-stack)
+- [🚀 Quick Start](#-quick-start)
+- [🧵 Final Philosophy](#-final-philosophy)
 
 ---
 
-## ⚡ Archestra Platform Capabilities Showcased
+# 🏗️ Visual Architecture
 
----
+## 🔷 Core System Architecture
 
-### 🧠 Agent Orchestration
+```mermaid
+flowchart TD
 
-* Centralized agent lifecycle management
-* Multi-agent coordination via executive manager
-* Dynamic agent discovery via A2A Agent Cards
-* Versioned prompt deployments
+    User["End User"]
 
----
+    UI["AgentFabric UI<br/>Next.js 16"]
+    API["Secure Backend Proxy<br/>Next.js API Routes"]
 
-### 🔐 Security & Governance
+    Gateway["A2A Gateway<br/>Archestra :9000"]
 
-* A2A Gateway token authentication
-* Server-side credential management
-* Policy-based execution control
-* Audit-ready request logging
-* Zero client-side secret exposure
+    Exec["Executive Manager Agent"]
+    HR["HR Agent"]
+    Finance["Finance Agent"]
 
----
+    MCPRegistry["MCP Registry"]
+    PostgresMCP["PostgreSQL MCP Server<br/>Self Hosted Docker"]
 
-### 🔌 MCP Capability Layer
+    User --> UI
+    UI --> API
+    API --> Gateway
 
-* PostgreSQL MCP Server for structured data access
-* Real-time query execution
-* Type-safe data tooling
-* Multi-system integration support
+    Gateway --> Exec
+    Exec --> HR
+    Exec --> Finance
 
----
+    HR --> MCPRegistry
+    Finance --> MCPRegistry
 
-### 📊 Observability & Production Readiness
-
-* Request tracing
-* Performance metrics
-* Streaming response monitoring
-* Structured error handling
-* **Conversation history tracking**
-* **Live chat session management**
-
----
-
-### 💬 Conversation Management
-
-* **Smart Search & Filtering:** Find conversations by title, content, or agent
-* **Toast Notifications:** Real-time feedback for actions and errors
-* **Optimized Chat Interface:**
-    * Message history virtualization
-    * Streaming response support
-    * Rich message formatting
-    * Connection status indicators
-* **Responsive Design:** Mobile-first layout with smooth animations
-
-
-* Real-time conversation history from Archestra Platform API
-* Clickable conversation cards on homepage
-* Automatic message loading when resuming chats
-* Support for multiple message formats (A2A protocol)
-* Live updates every 15 seconds
-
----
-
-## 🏗️ System Architecture
-
-```
-Next.js Enterprise UI
-        ↓
-Secure Backend Proxy (Next.js API Layer)
-        ↓
-A2A Gateway (Archestra)
-        ↓
-AgentFabric Execution Layer
-   • Executive Manager
-   • HR Agent
-   • Finance Agent
-        ↓
-MCP Capability Layer
-        ↓
-PostgreSQL MCP Server
+    MCPRegistry --> PostgresMCP
 ```
 
 ---
 
-## 🧬 Why AgentFabric Matters
+## 📊 Observability Architecture
 
-Traditional AI agents:
-❌ Run in isolation
-❌ No governance
-❌ No tool security
-❌ No interoperability
+```mermaid
+flowchart LR
 
-AgentFabric enables:
-✅ Enterprise agent governance
-✅ Secure tool and data access
-✅ Multi-agent collaboration
-✅ Production observability
-✅ Protocol-standard agent communication
+    Archestra["Archestra Metrics<br/>:9050 /metrics"]
+    Prometheus["Prometheus Scraper"]
+    Grafana["Grafana Dashboards"]
+
+    Archestra --> Prometheus
+    Prometheus --> Grafana
+```
 
 ---
 
-## 🚀 Quick Start
+# 🏢 AI Workforce Model
 
-### Prerequisites
+| Agent                | Responsibility          | Capabilities                    |
+| -------------------- | ----------------------- | ------------------------------- |
+| 🧠 Executive Manager | Orchestrates sub-agents | Delegation, strategic summaries |
+| 👥 HR Agent          | Employee intelligence   | Leave data, org structure       |
+| 💰 Finance Agent     | Financial analytics     | Budgets, expenses, payroll      |
 
-* Node.js 18+
-* PostgreSQL 15+
-* Archestra Platform running locally
+Each agent:
+
+* Runs remotely on Archestra
+* Uses controlled MCP tools
+* Operates under policy enforcement
+* Is fully observable via metrics
 
 ---
 
-### Install
+# 🔐 Enterprise Governance Capabilities Used
+
+AgentFabric deeply integrates Archestra’s core platform features:
+
+## ✅ MCP Registry
+
+* Remote MCP services
+* Self-hosted PostgreSQL MCP (Docker)
+* Fine-grained tool assignment per agent
+* Credential isolation per MCP service
+
+## ✅ LLM Configuration
+
+* Centralized model provider management
+* No API keys exposed to frontend
+* Provider abstraction without code changes
+
+## ✅ Tool Policies
+
+* Context-aware allow/block rules
+* Trusted vs untrusted result classification
+* Optional dual-LLM sanitization
+* Tool execution governance
+
+## ✅ A2A Gateway
+
+* Token-based secure agent communication
+* Standardized agent interoperability
+* Zero direct LLM calls from client
+
+## ✅ Archestra Platform APIs
+
+* Agent card discovery
+* Conversation history retrieval
+* Dynamic agent metadata loading
+
+## ✅ Observability
+
+* Token usage metrics
+* Cost tracking
+* P95 latency
+* Time to first token
+* Blocked tool counts
+* CPU and system health
+
+---
+
+# 📊 Production Observability Dashboard
+
+AgentFabric integrates Prometheus + Grafana to monitor:
+
+* 🔢 Total Tokens Used
+* 👤 Tokens Per Agent
+* 📥 Input vs Output Split
+* 💰 Cost Per Agent
+* ⚡ Tokens Per Second
+* ⏱ P95 Request Latency
+* 🚨 Blocked Tool Attempts
+
+This transforms AI from a black box into a measurable enterprise system.
+
+---
+
+
+
+
+
+# 📸 Screenshots (Add Your Images Here)
+
+## 🖥️ Workforce Control Plane UI
+
+![AgentFabric UI](./screenshots/ui-dashboard.png)
+
+---
+
+## 💬 Agent Conversation View
+
+![Chat Interface](./screenshots/chat-view.png)
+
+---
+
+## 📊 Observability Dashboard
+
+![Grafana Dashboard](./screenshots/grafana-dashboard.png)
+
+---
+
+## 🔧 MCP Configuration
+
+![MCP Registry](./screenshots/mcp-registry.png)
+
+---
+
+# 🛠 Tech Stack
+
+| Layer         | Technology            |
+| ------------- | --------------------- |
+| Frontend      | Next.js 16 + React 19 |
+| Backend       | Next.js API Routes    |
+| Protocol      | A2A + MCP             |
+| AI Platform   | Archestra             |
+| Database      | PostgreSQL            |
+| Observability | Prometheus + Grafana  |
+| SDK           | @a2a-js/sdk           |
+
+---
+
+# 🚀 Quick Start
 
 ```bash
-git clone <repo>
+git clone https://github.com/TheKumaara/AgentFabric.git
 cd agentfabric
 npm install
 ```
 
----
-
-### Database Setup
+### Setup Database
 
 ```bash
 createdb agentfabric
@@ -203,29 +221,16 @@ npm run db:push
 npm run db:seed
 ```
 
----
-
 ### Configure Archestra
-
-```bash
-cp .env.example .env.local
-```
-
-Add:
 
 ```
 ARCHESTRA_API_KEY=
 ARCHESTRA_A2A_GATEWAY_TOKEN=
 ARCHESTRA_BASE_URL=
-
 ORCHESTRATOR_PROMPT_ID=
 HR_PROMPT_ID=
 FINANCE_PROMPT_ID=
 ```
-
----
-
-### Run
 
 ```bash
 npm run dev
@@ -233,86 +238,10 @@ npm run dev
 
 ---
 
-## 🎮 Example Use Cases
-
-### HR Intelligence
-
-* Employee analytics
-* Leave management insights
-* Organizational queries
-
-### Financial Intelligence
-
-* Budget analysis
-* Expense tracking
-* Payroll insights
-
-### Company Intelligence
-
-* Cross-department analytics
-* Company-wide metrics
-* Strategic summaries
-
----
-
-## 🛠 Tech Stack
-
-| Layer       | Technology               |
-| ----------- | ------------------------ |
-| Frontend    | Next.js 16 + React 19    |
-| Backend     | Next.js API Routes       |
-| Protocol    | A2A + MCP                |
-| AI Platform | Archestra                |
-| Database    | PostgreSQL + Drizzle ORM |
-| SDK         | @a2a-js/sdk              |
-
----
-
-## 🔐 Security Model
-
-* Backend proxy isolation
-* Server-side A2A authentication
-* Environment-based secrets
-* Type-safe DB access
-* Same-origin API enforcement
-
----
-
-## 🎯 Hackathon Criteria Alignment
-
-### Impact
-
-Real enterprise multi-agent architecture.
-
-### Innovation
-
-A2A + Archestra + MCP unified platform.
-
-### Technical Depth
-
-Production-grade infra patterns.
-
-### Best Use of Archestra
-
-Governance + orchestration + MCP capability usage.
-
----
-
-## 🧭 Future Roadmap
-
-* Additional department agents (Ops, Sales, Compliance)
-* Agent-to-agent workflows
-* Enterprise audit dashboards
-* Policy visualization layer
-* Production cloud deployment
-
----
-
-## 🧵 Project Philosophy
+# 🧵 Final Philosophy
 
 > AgentFabric is not an AI chatbot.
-> It is an enterprise agent infrastructure layer.
+> It is an enterprise AI workforce infrastructure layer.
 
 ---
-
 
