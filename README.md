@@ -56,7 +56,7 @@ flowchart TD
     API["Secure Backend Proxy<br/>Next.js API Routes"]
 
     ArchestraAPI["Archestra Platform APIs"]
-    Gateway["A2A Gateway<br/>Archestra :9000"]
+    Gateway["A2A Gateway<br/>Archestra"]
 
     Exec["Executive Manager Agent"]
     HR["HR Agent"]
@@ -64,6 +64,10 @@ flowchart TD
 
     MCPRegistry["MCP Registry"]
     PostgresMCP["PostgreSQL MCP Server<br/>Docker"]
+
+    Metrics["Archestra Metrics<br/>"]
+    Prometheus["Prometheus"]
+    Grafana["Grafana Dashboards"]
 
     User --> UI
     UI --> API
@@ -78,6 +82,11 @@ flowchart TD
     Finance --> MCPRegistry
 
     MCPRegistry --> PostgresMCP
+
+    Gateway --> Metrics
+    Metrics --> Prometheus
+    Prometheus --> Grafana
+
 ```
 
 ---
@@ -87,7 +96,7 @@ flowchart TD
 ```mermaid
 flowchart LR
 
-    Archestra["Archestra Metrics<br/>:9050 /metrics"]
+    Archestra["Archestra Metrics"]
     Prometheus["Prometheus Scraper"]
     Grafana["Grafana Dashboards"]
 
