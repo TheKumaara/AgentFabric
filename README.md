@@ -1,8 +1,26 @@
+# 🧵 AgentFabric — Enterprise AI Workforce Control Plane
+
+> **Built for the [2 Fast 2 MCP Hackathon](https://www.wemakedevs.org/hackathons/2fast2mcp)**
+> Powered by [Archestra.ai](https://www.archestra.ai)
+
+---
+
 # 🚀 What Is AgentFabric?
 
 **AgentFabric is a governed, observable, injection-resistant multi-agent AI workforce platform.**
 
 It simulates a real enterprise where departments operate as intelligent AI agents — securely orchestrated through Archestra and connected to live data via MCP.
+
+⚡ **Agents are dynamically loaded from Archestra — not hardcoded in the frontend.**
+
+The homepage:
+
+* Fetches available agents via Archestra Platform APIs
+* Dynamically renders agent cards
+* Loads agent metadata in real-time
+* Allows workforce expansion without frontend redeploy
+
+This mirrors real enterprise AI control planes.
 
 This is not a chatbot demo.
 This is enterprise AI infrastructure.
@@ -32,11 +50,12 @@ This is enterprise AI infrastructure.
 ```mermaid
 flowchart TD
 
-    User["End User"]P
+    User["End User"]
 
     UI["AgentFabric UI<br/>Next.js"]
     API["Secure Backend Proxy<br/>Next.js API Routes"]
 
+    ArchestraAPI["Archestra Platform APIs"]
     Gateway["A2A Gateway<br/>Archestra :9000"]
 
     Exec["Executive Manager Agent"]
@@ -48,6 +67,7 @@ flowchart TD
 
     User --> UI
     UI --> API
+    API --> ArchestraAPI
     API --> Gateway
 
     Gateway --> Exec
@@ -87,6 +107,8 @@ flowchart LR
 
 Each agent:
 
+* Is registered in Archestra
+* Is dynamically discovered via Archestra APIs
 * Runs remotely on Archestra
 * Uses controlled MCP tools
 * Operates under policy enforcement
@@ -94,9 +116,31 @@ Each agent:
 
 ---
 
+## 🔄 Dynamic Agent Discovery
+
+AgentFabric does **not** define agents in the UI.
+
+Instead:
+
+* Agents live in Archestra (control plane)
+* Frontend fetches agent metadata via API
+* New agents appear automatically
+* No frontend redeploy required
+
+This enables:
+
+* Workforce expansion
+* Multi-agent scalability
+* Platform-driven architecture
+* Real enterprise-style control plane separation
+
+---
+
 # 🛡 AI Safety Architecture
 
 AgentFabric implements **defense-in-depth AI governance**.
+
+---
 
 ## 🔐 Layer 1 — SQL Tool Firewall
 
@@ -148,7 +192,7 @@ Main LLM (Privileged)
 * Prevents prompt injection via database rows
 * Blocks malicious embedded instructions
 * Strips unsafe content
-* Ensures only factual summaries reach decision logic
+* Ensures only factual summaries reach reasoning logic
 
 ---
 
@@ -222,6 +266,15 @@ Least-privilege architecture.
 
 ---
 
+## ✅ Archestra Platform APIs
+
+* Dynamic agent discovery
+* Agent metadata loading
+* Conversation history retrieval
+* Control-plane driven UI rendering
+
+---
+
 # 📊 Production Observability
 
 Prometheus + Grafana track:
@@ -277,11 +330,11 @@ cd agentfabric
 npm install
 ```
 
-### Setup Database
+### Setup Database (Demo Only)
 
-> **Note:** The PostgreSQL database connection is required for the **quick demo purpose only**. This Next.js project will **not break** without it. In Archestra, you can connect any database or other method of data sources like document parsing.
+> PostgreSQL is required only for the demo use case. The project does not break without it.
 
-For the quick demo, put `DATABASE_URL` in your `.env` file, then run:
+Add `DATABASE_URL` in `.env`:
 
 ```bash
 createdb agentfabric
@@ -289,13 +342,14 @@ npm run db:push
 npm run db:seed
 ```
 
+---
+
 ### Configure Archestra
 
 ```
 ARCHESTRA_API_KEY=
 ARCHESTRA_A2A_GATEWAY_TOKEN=
 ARCHESTRA_BASE_URL=
-
 ```
 
 ```bash
@@ -312,14 +366,21 @@ A2A enables structured delegation across agents.
 
 ---
 
-## 🔐 2. Tool Governance Is Critical
+## 🔄 2. Platform-Driven Agent Discovery
 
-LLMs without tool policies are dangerous.
+Agents should live in the control plane — not in UI code.
+
+Dynamic discovery enables scalable workforce design.
+
+---
+
+## 🔐 3. Tool Governance Is Critical
+
 Conditional SQL firewall rules protect data integrity.
 
 ---
 
-## 🛡 3. Treat Tool Output as Adversarial
+## 🛡 4. Treat Tool Output as Adversarial
 
 Dual-LLM quarantine taught me:
 
@@ -332,13 +393,13 @@ Enterprise AI requires layered safety.
 
 ---
 
-## 📊 4. Observability Transforms AI Into Infrastructure
+## 📊 5. Observability Transforms AI Into Infrastructure
 
 Metrics convert AI from demo to production system.
 
 ---
 
-## 🏗 5. Enterprise Thinking > Prompt Engineering
+## 🏗 6. Enterprise Thinking > Prompt Engineering
 
 Building AgentFabric required:
 
