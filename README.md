@@ -32,7 +32,7 @@ This is enterprise AI infrastructure.
 ```mermaid
 flowchart TD
 
-    User["End User"]
+    User["End User"]P
 
     UI["AgentFabric UI<br/>Next.js"]
     API["Secure Backend Proxy<br/>Next.js API Routes"]
@@ -295,9 +295,7 @@ npm run db:seed
 ARCHESTRA_API_KEY=
 ARCHESTRA_A2A_GATEWAY_TOKEN=
 ARCHESTRA_BASE_URL=
-EXECUTIVE_MANAGER_AGENT_ID=
-HR_AGENT_ID=
-FINANCE_AGENT_ID=
+
 ```
 
 ```bash

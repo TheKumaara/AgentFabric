@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Agent ID to Archestra Prompt ID mapping
-const AGENT_PROMPT_IDS: Record<string, string> = {
-    'orchestrator': process.env.EXECUTIVE_MANAGER_AGENT_ID || 'd904f99e-af2a-4e6a-9474-44f78403ccc4',
-    'hr': process.env.HR_AGENT_ID || '144bce71-3190-4c72-872d-1e620b119038',
-    'finance': process.env.FINANCE_AGENT_ID || '2d360a03-9192-4ec0-a1e7-27c17a86f8e4'
-};
-
 /**
  * GET /api/archestra/[agentId]
  * 
@@ -23,22 +16,17 @@ export async function GET(
     try {
         const { agentId } = await params;
 
-        // Check if agentId is a friendly name or a UUID
-        let promptId = AGENT_PROMPT_IDS[agentId];
+        // Validate agent ID format (UUID)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-        // If not found in mapping, check if it's already a UUID
-        if (!promptId) {
-            // Check if agentId matches any of the UUIDs in the mapping
-            const matchingEntry = Object.entries(AGENT_PROMPT_IDS).find(([_, uuid]) => uuid === agentId);
-            if (matchingEntry) {
-                promptId = agentId; // It's already a UUID
-            } else {
-                return NextResponse.json(
-                    { error: `Unknown agent: ${agentId}. Valid agents: ${Object.keys(AGENT_PROMPT_IDS).join(', ')}` },
-                    { status: 404 }
-                );
-            }
+        if (!uuidRegex.test(agentId)) {
+            return NextResponse.json(
+                { error: `Invalid agent ID format: ${agentId}` },
+                { status: 400 }
+            );
         }
+
+        const promptId = agentId;
 
         // Get configuration from environment
         const ARCHESTRA_BASE_URL = process.env.ARCHESTRA_BASE_URL || 'http://127.0.0.1:9000';

@@ -11,45 +11,41 @@ import { StatCard } from '@/components/StatCard';
 import { ConversationSkeleton } from '@/components/LoadingStates';
 import { config } from '@/config';
 
-const AGENTS = [
-  {
-    id: 'orchestrator',
-    name: 'Executive Manager',
-    role: 'Executive Operations',
-    description: 'Oversees company operations, provides strategic insights, and routes queries to department managers.',
-    icon: Command,
-    color: 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-  },
-  {
-    id: 'hr',
-    name: 'HR Agent',
-    role: 'Human Resources',
-    description: 'Manages employee data, leave requests, and recruiting workflows.',
-    icon: Users,
-    color: 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-  },
-  {
-    id: 'finance',
-    name: 'Finance Agent',
-    role: 'Financial Operations',
-    description: 'Handles payroll, expenses, budget tracking, and financial forecasting.',
-    icon: BarChart3,
-    color: 'bg-green-500/10 text-green-400 border-green-500/20'
-  },
-  {
-    id: 'ops',
-    name: 'Ops Agent',
-    role: 'System Operations',
-    description: 'Monitors system health, logs, and infrastructure status.',
-    icon: Activity,
-    color: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-    disabled: true
+// AGENTS constant removed - fetching dynamically from API
+interface UIAgent {
+  id: string;
+  name: string;
+  role: string;
+  description: string;
+  icon: any;
+  color: string;
+  disabled?: boolean;
+}
+
+const getAgentVisuals = (id: string, name: string, role?: string) => {
+  const lowerRole = role?.toLowerCase() || '';
+  const lowerId = id?.toLowerCase() || '';
+  const lowerName = name?.toLowerCase() || '';
+
+  if (lowerId === 'orchestrator' || lowerRole.includes('exec') || lowerName.includes('executive')) {
+    return { icon: Command, color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' };
   }
-];
+  if (lowerId === 'hr' || lowerRole.includes('hr') || lowerRole.includes('human') || lowerName.includes('hr')) {
+    return { icon: Users, color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' };
+  }
+  if (lowerId === 'finance' || lowerRole.includes('financ') || lowerName.includes('finance')) {
+    return { icon: BarChart3, color: 'bg-green-500/10 text-green-400 border-green-500/20' };
+  }
+  if (lowerId === 'ops' || lowerRole.includes('ops') || lowerRole.includes('system') || lowerName.includes('ops')) {
+    return { icon: Activity, color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' };
+  }
+  return { icon: MessageSquare, color: 'bg-gray-500/10 text-gray-400 border-gray-500/20' };
+};
 
 export default function Home() {
   const [agentStatus, setAgentStatus] = useState<Record<string, AgentStatus>>({});
   const [loading, setLoading] = useState(true);
+  const [agents, setAgents] = useState<UIAgent[]>([]); // New state for agents
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [displayCount, setDisplayCount] = useState(config.api.initialDisplayCount);
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,24 +54,60 @@ export default function Home() {
 
 
   useEffect(() => {
-    // Fetch agent status from Archestra
-    const fetchAgentStatus = async () => {
+    // Fetch agents and their status
+    const fetchAgentsAndStatus = async () => {
       try {
+        // 1. Fetch Agents List
+        const agentsResponse = await fetch('/api/agents?agentType=agent');
+        if (!agentsResponse.ok) throw new Error('Failed to fetch agents');
+
+        const agentsData = await agentsResponse.json();
+        const agentsList = agentsData.data || (Array.isArray(agentsData) ? agentsData : []);
+
+        // Transform to UIAgent format
+        const formattedAgents: UIAgent[] = Array.isArray(agentsList) ? agentsList.map((agent: any) => {
+          const visuals = getAgentVisuals(agent.id, agent.name, agent.role);
+
+          // Derive role from name if missing, for display purposes
+          let displayRole = agent.role;
+          if (!displayRole) {
+            const lowerName = agent.name?.toLowerCase() || '';
+            if (lowerName.includes('executive')) displayRole = 'Executive Operations';
+            else if (lowerName.includes('hr')) displayRole = 'Human Resources';
+            else if (lowerName.includes('finance')) displayRole = 'Financial Operations';
+            else if (lowerName.includes('ops') || lowerName.includes('system')) displayRole = 'System Operations';
+            else displayRole = 'AI Assistant';
+          }
+
+          return {
+            id: agent.id,
+            name: agent.name,
+            role: displayRole,
+            description: agent.description || 'No description provided.',
+            ...visuals,
+            disabled: agent.status === 'offline' // Assuming API might return status or we default to enabled
+          };
+        }) : [];
+
+        setAgents(formattedAgents);
+
+        // 2. Fetch Status for each agent (if needed separately, or use what came from agents API)
         const statuses: Record<string, AgentStatus> = {};
 
-        for (const agent of AGENTS.filter(a => !a.disabled)) {
+        for (const agent of formattedAgents.filter(a => !a.disabled)) {
           try {
-            // Use the backend proxy endpoint
+            // Use the backend proxy endpoint to check specific status details
             const response = await fetch(`/api/archestra/${agent.id}`);
             if (response.ok) {
               const card = await response.json();
               statuses[agent.id] = {
-                available: true,
+                available: true, // If we can fetch card, it is likely available
                 name: card.name,
                 capabilities: card.capabilities,
                 lastChecked: new Date().toISOString()
               };
             } else {
+              // If fetch fails, maybe it's just temporarily down request
               statuses[agent.id] = { available: false };
             }
           } catch (err) {
@@ -85,18 +117,18 @@ export default function Home() {
 
         setAgentStatus(statuses);
       } catch (error) {
-        console.error('Failed to fetch agent status:', error);
+        console.error('Failed to fetch agents/status:', error);
         if (config.ui.enableToasts) {
-          toast.error('Failed to fetch agent status');
+          toast.error('Failed to fetch agents');
         }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAgentStatus();
+    fetchAgentsAndStatus();
     // Refresh every 30 seconds
-    const interval = setInterval(fetchAgentStatus, config.api.agentStatusRefreshInterval);
+    const interval = setInterval(fetchAgentsAndStatus, config.api.agentStatusRefreshInterval);
     return () => clearInterval(interval);
   }, []);
 
@@ -226,7 +258,7 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {AGENTS.map((agent) => (
+          {agents.map((agent) => (
             <Link
               key={agent.id}
               href={agent.disabled ? '#' : `/chat/${agent.id}`}
@@ -236,7 +268,7 @@ export default function Home() {
 
               <div className="relative z-10">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${agent.color}`}>
-                  <agent.icon className="w-6 h-6" />
+                  {agent.icon && <agent.icon className="w-6 h-6" />}
                 </div>
 
                 <div className="flex justify-between items-start mb-2">
@@ -323,7 +355,7 @@ export default function Home() {
                 className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500/50 focus:bg-white/[0.07] transition-all cursor-pointer"
               >
                 <option value="all">All Agents</option>
-                {AGENTS.filter(a => !a.disabled).map(agent => (
+                {agents.filter(a => !a.disabled).map(agent => (
                   <option key={agent.id} value={agent.name}>{agent.name}</option>
                 ))}
               </select>
@@ -350,7 +382,7 @@ export default function Home() {
               <div className="space-y-4">
                 {filteredConversations.slice(0, displayCount).map((conv) => {
                   // Find matching agent info by name for icon display
-                  const agentInfo = AGENTS.find(a =>
+                  const agentInfo = agents.find(a =>
                     a.name.toLowerCase() === conv.agent?.name?.toLowerCase()
                   );
 

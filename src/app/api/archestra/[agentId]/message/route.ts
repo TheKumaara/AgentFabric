@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Agent ID to Archestra Prompt ID mapping
-const AGENT_PROMPT_IDS: Record<string, string> = {
-    'orchestrator': process.env.EXECUTIVE_MANAGER_AGENT_ID || 'd904f99e-af2a-4e6a-9474-44f78403ccc4',
-    'hr': process.env.HR_AGENT_ID || '144bce71-3190-4c72-872d-1e620b119038',
-    'finance': process.env.FINANCE_AGENT_ID || '2d360a03-9192-4ec0-a1e7-27c17a86f8e4'
-};
-
 /**
  * POST /api/archestra/[agentId]/message
  * 
@@ -20,14 +13,17 @@ export async function POST(
     try {
         const { agentId } = await params;
 
-        // Validate agent ID
-        const promptId = AGENT_PROMPT_IDS[agentId];
-        if (!promptId) {
+        // Validate agent ID format (UUID)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        if (!uuidRegex.test(agentId)) {
             return NextResponse.json(
-                { error: `Unknown agent: ${agentId}` },
-                { status: 404 }
+                { error: `Invalid agent ID format: ${agentId}` },
+                { status: 400 }
             );
         }
+
+        const promptId = agentId;
 
         // Get configuration from environment
         const ARCHESTRA_BASE_URL = process.env.ARCHESTRA_BASE_URL || 'http://127.0.0.1:9000';
