@@ -156,6 +156,6 @@ export class ArchestraClient {
 // Singleton instance for the app
 // Reads from env vars
 export const archestra = new ArchestraClient({
-    apiKey: process.env.ARCHESTRA_API_KEY || 'mock-key',
+    apiKey: process.env.ARCHESTRA_API_KEY! ,
     baseUrl: process.env.ARCHESTRA_BASE_API_URL
 });
