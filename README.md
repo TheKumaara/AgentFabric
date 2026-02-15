@@ -29,7 +29,8 @@ This is enterprise AI infrastructure.
 
 # 📑 Table of Contents
 
-* [🏗️ Visual Architecture](#️-visual-architecture)
+* [� Deployed Project](#-deployed-project)
+* [�🏗️ Visual Architecture](#️-visual-architecture)
 * [🏢 AI Workforce Model](#-ai-workforce-model)
 * [🛡 AI Safety Architecture](#-ai-safety-architecture)
 * [🔐 Enterprise Governance Capabilities](#-enterprise-governance-capabilities)
@@ -40,6 +41,14 @@ This is enterprise AI infrastructure.
 * [📚 What I Learned](#-what-i-learned)
 * [🔮 Future Enhancements](#-future-enhancements)
 * [🧵 Final Philosophy](#-final-philosophy)
+
+---
+
+# 🌍 Deployed Project
+
+You can access the live version of AgentFabric here:
+
+> **[🚀 Access Live Demo](https://agentfabric.aimentor247.com/)**
 
 ---
 
