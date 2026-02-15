@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Agent ID to Archestra Prompt ID mapping
 const AGENT_PROMPT_IDS: Record<string, string> = {
-    'orchestrator': process.env.ORCHESTRATOR_PROMPT_ID || 'd904f99e-af2a-4e6a-9474-44f78403ccc4',
-    'hr': process.env.HR_PROMPT_ID || '144bce71-3190-4c72-872d-1e620b119038',
-    'finance': process.env.FINANCE_PROMPT_ID || '2d360a03-9192-4ec0-a1e7-27c17a86f8e4'
+    'orchestrator': process.env.EXECUTIVE_MANAGER_AGENT_ID || 'd904f99e-af2a-4e6a-9474-44f78403ccc4',
+    'hr': process.env.HR_AGENT_ID || '144bce71-3190-4c72-872d-1e620b119038',
+    'finance': process.env.FINANCE_AGENT_ID || '2d360a03-9192-4ec0-a1e7-27c17a86f8e4'
 };
 
 /**

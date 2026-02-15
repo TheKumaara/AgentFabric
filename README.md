@@ -1,13 +1,6 @@
-# 🧵 AgentFabric — Enterprise AI Workforce Control Plane
-
-> **Built for the [2 Fast 2 MCP Hackathon](https://www.wemakedevs.org/hackathons/2fast2mcp)**
-> Powered by [Archestra.ai](https://www.archestra.ai)
-
----
-
 # 🚀 What Is AgentFabric?
 
-**AgentFabric is a governed, observable, multi-agent AI workforce platform.**
+**AgentFabric is a governed, observable, injection-resistant multi-agent AI workforce platform.**
 
 It simulates a real enterprise where departments operate as intelligent AI agents — securely orchestrated through Archestra and connected to live data via MCP.
 
@@ -18,15 +11,17 @@ This is enterprise AI infrastructure.
 
 # 📑 Table of Contents
 
-- [🏗️ Visual Architecture](#️-visual-architecture-mermaid)
-- [🏢 AI Workforce Model](#-ai-workforce-model)
-- [🔐 Enterprise Governance Capabilities](#-enterprise-governance-capabilities-used)
-- [📊 Observability Dashboard](#-production-observability-dashboard)
-- [📸 Screenshots](#-screenshots-add-your-images-here)
-- [🛠 Tech Stack](#-tech-stack)
-- [🚀 Quick Start](#-quick-start)
-- [📚 What I Learned](#-what-i-learned-building-agentfabric-with-archestraai)
-- [🧵 Final Philosophy](#-final-philosophy)
+* [🏗️ Visual Architecture](#️-visual-architecture)
+* [🏢 AI Workforce Model](#-ai-workforce-model)
+* [🛡 AI Safety Architecture](#-ai-safety-architecture)
+* [🔐 Enterprise Governance Capabilities](#-enterprise-governance-capabilities)
+* [📊 Production Observability](#-production-observability)
+* [📸 Screenshots](#-screenshots)
+* [🛠 Tech Stack](#-tech-stack)
+* [🚀 Quick Start](#-quick-start)
+* [📚 What I Learned](#-what-i-learned)
+* [🔮 Future Enhancements](#-future-enhancements)
+* [🧵 Final Philosophy](#-final-philosophy)
 
 ---
 
@@ -39,7 +34,7 @@ flowchart TD
 
     User["End User"]
 
-    UI["AgentFabric UI<br/>Next.js 16"]
+    UI["AgentFabric UI<br/>Next.js"]
     API["Secure Backend Proxy<br/>Next.js API Routes"]
 
     Gateway["A2A Gateway<br/>Archestra :9000"]
@@ -49,7 +44,7 @@ flowchart TD
     Finance["Finance Agent"]
 
     MCPRegistry["MCP Registry"]
-    PostgresMCP["PostgreSQL MCP Server<br/>Self Hosted Docker"]
+    PostgresMCP["PostgreSQL MCP Server<br/>Docker"]
 
     User --> UI
     UI --> API
@@ -84,11 +79,11 @@ flowchart LR
 
 # 🏢 AI Workforce Model
 
-| Agent | Responsibility | Capabilities |
-| -------------------- | ----------------------- | ------------------------------- |
-| 🧠 Executive Manager | Orchestrates sub-agents | Delegation, strategic summaries |
-| 👥 HR Agent | Employee intelligence | Leave data, org structure |
-| 💰 Finance Agent | Financial analytics | Budgets, expenses, payroll |
+| Agent                | Responsibility        | Capabilities             |
+| -------------------- | --------------------- | ------------------------ |
+| 🧠 Executive Manager | Orchestration         | Delegation, summaries    |
+| 👥 HR Agent          | Employee intelligence | Org data, leave insights |
+| 💰 Finance Agent     | Financial analytics   | Budgets, expenses        |
 
 Each agent:
 
@@ -99,110 +94,178 @@ Each agent:
 
 ---
 
-# 🔐 Enterprise Governance Capabilities Used
+# 🛡 AI Safety Architecture
 
-AgentFabric deeply integrates Archestra’s core platform features:
+AgentFabric implements **defense-in-depth AI governance**.
+
+## 🔐 Layer 1 — SQL Tool Firewall
+
+Using Archestra Tool Call Policies:
+
+### Allowed:
+
+* `SELECT`
+
+### Blocked:
+
+* `DROP`
+* `DELETE`
+* `UPDATE`
+* `INSERT`
+* `ALTER`
+
+This ensures:
+
+* Read-only analytics
+* No destructive operations
+* No accidental schema modification
+* No LLM hallucination damage
+
+Tool calls are evaluated before execution.
+
+---
+
+## 🧠 Layer 2 — Dual-LLM Quarantine Sanitization
+
+All PostgreSQL execution results are treated as **untrusted input**.
+
+Instead of feeding raw tool output directly to the primary LLM:
+
+```
+Tool Result
+   ↓
+Quarantined LLM (Restricted)
+   ↓
+Structured Q&A
+   ↓
+Sanitized Summary
+   ↓
+Main LLM (Privileged)
+```
+
+### Benefits:
+
+* Prevents prompt injection via database rows
+* Blocks malicious embedded instructions
+* Strips unsafe content
+* Ensures only factual summaries reach decision logic
+
+---
+
+## 🏷 Layer 3 — Trusted vs Untrusted Result Classification
+
+Tool outputs are explicitly marked:
+
+* Trusted
+* Untrusted
+* Sanitized via Dual-LLM
+
+This prevents blind tool result usage.
+
+---
+
+## 🎯 Layer 4 — Role-Based Tool Assignment
+
+Each agent only receives required tools:
+
+| Agent     | DB Access              |
+| --------- | ---------------------- |
+| HR        | Read-only              |
+| Finance   | Read-only              |
+| Executive | No direct DB execution |
+
+Least-privilege architecture.
+
+---
+
+# 🔐 Enterprise Governance Capabilities
 
 ## ✅ MCP Registry
 
-* Remote MCP services
-* Self-hosted PostgreSQL MCP (Docker)
-* Fine-grained tool assignment per agent
-* Credential isolation per MCP service
+* Remote & self-hosted MCP servers
+* Fine-grained tool assignment
+* Credential isolation per service
 
-## ✅ LLM Configuration
+---
 
-* Centralized model provider management
-* No API keys exposed to frontend
-* Provider abstraction without code changes
+## ✅ Tool Policies (Execution Governance)
 
-## ✅ Tool Policies
+* Conditional allow/block rules
+* Context-aware execution
+* SQL firewall enforcement
+* Blocked query metrics tracking
 
-* Context-aware allow/block rules
-* Trusted vs untrusted result classification
-* Optional dual-LLM sanitization
-* Tool execution governance
+---
+
+## ✅ Dual-LLM Isolation
+
+* Quarantined LLM for unsafe tool data
+* Structured Q&A sanitization
+* Safe summary generation
+* Injection-resistant architecture
+
+---
+
+## ✅ LLM Configuration Abstraction
+
+* Centralized provider management
+* No API keys in frontend
+* Provider switching without code changes
+
+---
 
 ## ✅ A2A Gateway
 
-* Token-based secure agent communication
+* Secure token-based communication
 * Standardized agent interoperability
-* Zero direct LLM calls from client
-
-## ✅ Archestra Platform APIs
-
-* Agent card discovery
-* Conversation history retrieval
-* Dynamic agent metadata loading
-
-## ✅ Observability
-
-* Token usage metrics
-* Cost tracking
-* P95 latency
-* Time to first token
-* Blocked tool counts
-* CPU and system health
+* No direct client-to-LLM calls
 
 ---
 
-# 📊 Production Observability Dashboard
+# 📊 Production Observability
 
-AgentFabric integrates Prometheus + Grafana to monitor:
+Prometheus + Grafana track:
 
 * 🔢 Total Tokens Used
 * 👤 Tokens Per Agent
-* 📥 Input vs Output Split
 * 💰 Cost Per Agent
 * ⚡ Tokens Per Second
-* ⏱ P95 Request Latency
-* 🚨 Blocked Tool Attempts
+* ⏱ P95 Latency
+* 🚨 Blocked Tool Attempts (SQL Firewall)
+* 🔒 Dual-LLM Sanitization Activity
+* 🖥 System Health Metrics
 
-This transforms AI from a black box into a measurable enterprise system.
-
----
-
-
-
-
-
-# 📸 Screenshots (Add Your Images Here)
-
-## 🖥️ Workforce Control Plane UI
-
-![AgentFabric UI](./screenshots/ui-dashboard.png)
+AI becomes measurable infrastructure.
 
 ---
 
-## 💬 Agent Conversation View
+# 📸 Screenshots
 
-![Chat Interface](./screenshots/chat-view.png)
+## 🖥 Workforce UI
 
----
+![UI](./screenshots/ui-dashboard.png)
 
-## 📊 Observability Dashboard
+## 💬 Agent Conversation
 
-![Grafana Dashboard](./screenshots/grafana-dashboard.png)
+![Chat](./screenshots/chat-view.png)
 
----
+## 📊 Observability
 
-## 🔧 MCP Configuration
-
-![MCP Registry](./screenshots/mcp-registry.png)
+![Grafana](./screenshots/grafana-dashboard.png)
 
 ---
 
 # 🛠 Tech Stack
 
-| Layer | Technology |
-| ------------- | --------------------- |
-| Frontend | Next.js 16 + React 19 |
-| Backend | Next.js API Routes |
-| Protocol | A2A + MCP |
-| AI Platform | Archestra |
-| Database | PostgreSQL |
+| Layer         | Technology           |
+| ------------- | -------------------- |
+| Frontend      | Next.js              |
+| Backend       | Next.js API Routes   |
+| Protocol      | A2A + MCP            |
+| AI Platform   | Archestra            |
+| Database      | PostgreSQL           |
 | Observability | Prometheus + Grafana |
-| SDK | @a2a-js/sdk |
+| SDK           | @a2a-js/sdk          |
 
 ---
 
@@ -216,6 +279,10 @@ npm install
 
 ### Setup Database
 
+> **Note:** The PostgreSQL database connection is required for the **quick demo purpose only**. This Next.js project will **not break** without it. In Archestra, you can connect any database or other method of data sources like document parsing.
+
+For the quick demo, put `DATABASE_URL` in your `.env` file, then run:
+
 ```bash
 createdb agentfabric
 npm run db:push
@@ -228,9 +295,9 @@ npm run db:seed
 ARCHESTRA_API_KEY=
 ARCHESTRA_A2A_GATEWAY_TOKEN=
 ARCHESTRA_BASE_URL=
-ORCHESTRATOR_PROMPT_ID=
-HR_PROMPT_ID=
-FINANCE_PROMPT_ID=
+EXECUTIVE_MANAGER_AGENT_ID=
+HR_AGENT_ID=
+FINANCE_AGENT_ID=
 ```
 
 ```bash
@@ -239,271 +306,66 @@ npm run dev
 
 ---
 
-# 📚 What I Learned Building AgentFabric with Archestra.ai
+# 📚 What I Learned
 
-Building this AI Workforce platform using Archestra was not just about creating agents — it was about understanding how to design **secure, governed, observable multi-agent systems** for real-world use.
+## 🧠 1. Agents as Protocol-Driven Services
 
-Here are the key learnings from this journey:
-
----
-
-## 🧠 1. Designing with Agent-to-Agent (A2A) Protocol
-
-This project was my first real implementation of the **Agent 2 Agent (A2A) protocol**.
-
-I learned how to:
-
-* Connect agents through the A2A Gateway
-* Build hierarchical delegation (Executive → HR → Finance)
-* Treat agents as composable services rather than isolated chatbots
-* Enable structured communication between agents
-
-> **Key Insight:** *Agents are not just conversational interfaces — they are orchestrated, protocol-driven services capable of delegation and collaboration.*
+A2A enables structured delegation across agents.
 
 ---
 
-## 🔐 2. Securing LLM Access Through Platform Abstraction
+## 🔐 2. Tool Governance Is Critical
 
-Using Archestra’s LLM configuration layer, I learned:
-
-* Why API keys should never be exposed in application code
-* How centralized LLM configuration improves security
-* How to swap providers or models without modifying business logic
-
-> **Key Insight:** *Production AI systems must separate application logic from LLM credentials and provider configuration.*
+LLMs without tool policies are dangerous.
+Conditional SQL firewall rules protect data integrity.
 
 ---
 
-## 🧰 3. Fine-Grained MCP Tool Governance
+## 🛡 3. Treat Tool Output as Adversarial
 
-Through the MCP Registry, I learned how to:
+Dual-LLM quarantine taught me:
 
-* Manage both remote and self-hosted MCP servers
-* Attach specific tools to specific agents
-* Restrict tool access based on business requirements
-* Assign separate credentials for team-level or service-level usage
+* Tool outputs can contain injection
+* Data can poison prompts
+* Isolation layers are required
+* Sanitization must precede reasoning
 
-> **Key Insight:** *Tools are the real power of agents — but without governance, they become risk. Archestra enables precise, business-aligned tool control.*
-
----
-
-## 🛡 4. Implementing Tool Policies & LLM Safety Controls
-
-I explored Archestra’s tool policy capabilities to:
-
-* Allow or block tool calls based on context
-* Mark tool outputs as trusted or untrusted
-* Sanitize tool results via chained LLM calls
-* Prevent malicious data from propagating into primary LLM prompts
-
-> **Key Insight:** *AI systems must treat tool outputs as potentially unsafe input. Governance and validation layers are essential for secure AI operations.*
+Enterprise AI requires layered safety.
 
 ---
 
-## 📊 5. Production-Grade AI Observability
+## 📊 4. Observability Transforms AI Into Infrastructure
 
-Using the metrics exposed at port `9050`, I integrated:
-
-* Prometheus for metric collection
-* Grafana for visualization
-* Real-time dashboards tracking:
-
-  * Total token usage
-  * Input vs output token split
-  * Cost per agent
-  * P95 latency
-  * Streaming performance
-  * Blocked tool attempts
-
-> **Key Insight:** *AI systems need the same observability standards as distributed systems. Tracking cost, latency, usage, and governance metrics transforms AI from a demo into a production-ready platform.*
+Metrics convert AI from demo to production system.
 
 ---
 
-## 🏗 6. Thinking in Enterprise Architecture
+## 🏗 5. Enterprise Thinking > Prompt Engineering
 
-This project shifted my mindset from building prompt-based features to designing **platform-level AI systems**:
+Building AgentFabric required:
 
-* Separation of orchestration from application logic
-* Centralized LLM and tool governance
-* Role-based agent delegation
-* Observability-driven performance monitoring
-* Infrastructure-aware AI design
-
-> **Key Insight:** *Enterprise AI requires orchestration, governance, and observability — not just intelligence.*
+* Governance
+* Role isolation
+* Injection resistance
+* Cost monitoring
+* Structured orchestration
 
 ---
 
-## 🚀 Holistic Growth
+# 🔮 Future Enhancements
 
-Building AgentFabric with Archestra.ai taught me that:
-
-* Multi-agent systems require protocol-driven architecture
-* Governance is as important as capability
-* Observability makes AI measurable and controllable
-* Secure tool access is foundational to real-world deployment
-* Platform-first design enables scalable AI workforce systems
-
-This project marked a transition from experimenting with LLMs to engineering structured, secure, and production-oriented AI systems.
-
----
-
-# 🔮 Future Enhancements Using Archestra.ai
-
-AgentFabric is designed as a foundation for a governed, observable AI workforce. Leveraging Archestra’s platform capabilities, the following enhancements are planned to evolve it into a full enterprise-grade AI operations system.
-
----
-
-## 🧠 1. RAG & Knowledge Graph Integration
-
-Enable users to upload documents directly through the chat interface and convert them into structured knowledge using:
-
-* LightRAG for retrieval pipelines
-* Quadrant database for structured storage
-* Archestra Knowledge Graph MCP server
-
-Agents will then:
-
-* Query internal knowledge securely via MCP
-* Access long-term organizational memory
-* Share or restrict knowledge based on role and tool policies
-
-**Impact:**
-Transforms agents from task executors into domain-aware decision systems.
-
----
-
-## 🏢 2. Multi-Tenant AI Workforce Architecture
-
-Leverage Archestra’s:
-
-* LLM configurations
-* MCP credential isolation
-* Tool policies
-* Gateway access tokens
-
-To support:
-
-* Multiple companies or departments
-* Isolated AI workforces
-* Separate tool access and cost governance per tenant
-
-**Impact:**
-Enables SaaS-ready enterprise deployment.
-
----
-
-## 💰 3. AI Cost Governance Engine
-
-Using observability metrics (`llm_cost_total`, token usage, per-agent breakdown):
-
-Planned enhancements include:
-
-* Per-agent budget limits
-* Automatic agent throttling on cost thresholds
-* Real-time cost alerts
-* Cost-per-task analytics
-
-**Impact:**
-Prevents uncontrolled AI spending and introduces financial accountability.
-
----
-
-## 🛡 4. Advanced AI Compliance Mode
-
-Extend tool policy usage to support:
-
-* Dual-LLM validation for sensitive operations
-* Mandatory sanitization for external MCP outputs
-* Approval workflows for high-risk tool calls
-
-**Impact:**
-Supports regulated environments (finance, HR, legal).
-
----
-
-## 📊 5. Agent Performance Benchmarking
-
-Using Prometheus + Grafana metrics, future enhancements include:
-
-* Average tokens per request per agent
-* Cost efficiency per agent
-* Latency per agent
-* Tool success/failure rate tracking
-
-This enables performance-based evaluation of AI workforce members.
-
-**Impact:**
-Treats agents like measurable operational units.
-
----
-
-## 🔄 6. Dynamic Agent Builder Interface
-
-Using Archestra APIs (port 9000):
-
-* Create agents dynamically via UI
-* Attach tools from MCP registry
-* Configure tool policies visually
-* Assign sub-agents for delegation
-
-**Impact:**
-Turns AgentFabric into an AI Workforce Builder Platform.
-
----
-
-## 🤝 7. Agent-to-Agent Collaboration Insights
-
-Since A2A Gateway is already used:
-
-* Visualize delegation chains
-* Track cross-agent task routing
-* Analyze collaboration efficiency
-
-**Impact:**
-Improves orchestration transparency and debugging.
-
----
-
-## 📈 8. Intelligent Model Routing
-
-Using centralized LLM configuration:
-
-* Route simple tasks to cost-efficient models
-* Route complex tasks to high-capability models
-* Track performance and cost per model
-
-**Impact:**
-Optimizes AI performance-to-cost ratio automatically.
-
----
-
-## 🚨 9. SLA Monitoring & Alerting
-
-Using latency and streaming metrics:
-
-* P95 latency alerts
-* Cost anomaly alerts
-* Governance violation alerts
-* Slack / email notifications
-
-**Impact:**
-Transforms the system into a production-grade AI operations platform.
-
----
-
-# 🚀 Long-Term Vision
-
-The long-term goal is to evolve AgentFabric into:
-
-> A governed, observable, multi-agent AI workforce operating system built on Archestra’s orchestration, MCP integration, and enterprise governance capabilities.
-
-By combining RAG, multi-tenant isolation, cost governance, compliance-aware tooling, and advanced observability, this platform aims to demonstrate how AI agents can be deployed responsibly and scalably in real-world enterprise environments.
+* Multi-tenant isolation
+* Cost governance engine
+* Intelligent model routing
+* SLA monitoring
+* Dynamic agent builder UI
+* RAG integration via Knowledge Graph MCP
 
 ---
 
 # 🧵 Final Philosophy
 
 > AgentFabric is not an AI chatbot.
-> It is an enterprise AI workforce infrastructure layer.
+> It is a governed, observable, injection-resistant enterprise AI workforce infrastructure layer.
 
 ---
