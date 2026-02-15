@@ -29,7 +29,7 @@ export async function GET(
         const promptId = agentId;
 
         // Get configuration from environment
-        const ARCHESTRA_BASE_URL = process.env.ARCHESTRA_BASE_URL || 'http://127.0.0.1:9000';
+        const ARCHESTRA_BASE_API_URL = process.env.ARCHESTRA_BASE_API_URL || 'http://127.0.0.1:9000';
         const A2A_GATEWAY_TOKEN = process.env.ARCHESTRA_A2A_GATEWAY_TOKEN;
 
         if (!A2A_GATEWAY_TOKEN) {
@@ -41,7 +41,7 @@ export async function GET(
         }
 
         // Construct Archestra agent card URL
-        const agentCardUrl = `${ARCHESTRA_BASE_URL}/v1/a2a/${promptId}/.well-known/agent.json`;
+        const agentCardUrl = `${ARCHESTRA_BASE_API_URL}/v1/a2a/${promptId}/.well-known/agent.json`;
 
         console.log(`[Archestra Proxy] Fetching agent card for ${agentId} from ${agentCardUrl}`);
 

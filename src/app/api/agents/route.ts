@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-    const baseUrl = process.env.ARCHESTRA_BASE_URL;
+    const baseUrl = process.env.ARCHESTRA_BASE_API_URL;
     const apiKey = process.env.ARCHESTRA_API_KEY;
 
     if (!baseUrl || !apiKey) {

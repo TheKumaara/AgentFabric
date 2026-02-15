@@ -26,7 +26,7 @@ export async function POST(
         const promptId = agentId;
 
         // Get configuration from environment
-        const ARCHESTRA_BASE_URL = process.env.ARCHESTRA_BASE_URL || 'http://127.0.0.1:9000';
+        const ARCHESTRA_BASE_API_URL = process.env.ARCHESTRA_BASE_API_URL || 'http://127.0.0.1:9000';
         const A2A_GATEWAY_TOKEN = process.env.ARCHESTRA_A2A_GATEWAY_TOKEN;
 
         if (!A2A_GATEWAY_TOKEN) {
@@ -41,7 +41,7 @@ export async function POST(
         const jsonRpcRequest = await request.json();
 
         // Construct Archestra agent endpoint
-        const agentEndpoint = `${ARCHESTRA_BASE_URL}/v1/a2a/${promptId}`;
+        const agentEndpoint = `${ARCHESTRA_BASE_API_URL}/v1/a2a/${promptId}`;
 
         console.log(`[Archestra Proxy] Sending message to ${agentId} at ${agentEndpoint}`);
 

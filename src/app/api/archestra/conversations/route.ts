@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
  */
 export async function GET() {
     try {
-        const ARCHESTRA_BASE_URL = process.env.ARCHESTRA_BASE_URL || 'http://127.0.0.1:9000';
+        const ARCHESTRA_BASE_API_URL = process.env.ARCHESTRA_BASE_API_URL || 'http://127.0.0.1:9000';
         const ARCHESTRA_API_KEY = process.env.ARCHESTRA_API_KEY;
 
         if (!ARCHESTRA_API_KEY) {
@@ -18,7 +18,7 @@ export async function GET() {
         }
 
         // Fetch conversations from Archestra Platform API
-        const response = await fetch(`${ARCHESTRA_BASE_URL}/api/chat/conversations`, {
+        const response = await fetch(`${ARCHESTRA_BASE_API_URL}/api/chat/conversations`, {
             headers: {
                 'Authorization': ARCHESTRA_API_KEY,
                 'Accept': 'application/json'
